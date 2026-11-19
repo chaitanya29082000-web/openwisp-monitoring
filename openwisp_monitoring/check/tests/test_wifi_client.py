@@ -187,3 +187,29 @@ class TestWifiClient(
         with freeze_time(datetime(2024, 12, 14, 18, tzinfo=tz)):
             self._run_wifi_clients_checks()
             mocked_check.assert_called()
+
+    @patch.object(
+        app_settings,
+        "WIFI_CLIENTS_CHECK_SNOOZE_SCHEDULE",
+        [("11-15 22:00", "11-17 06:00")],
+    )
+    def test_wifi_clients_check_snooze_schedule_multiday_range(self):
+        tz = timezone.get_current_timezone()
+        cases = (
+            (datetime(2026, 11, 15, 12, 0, tzinfo=tz), True),
+            (datetime(2026, 11, 15, 23, 0, tzinfo=tz), False),
+            (datetime(2026, 11, 16, 12, 0, tzinfo=tz), False),
+            (datetime(2026, 11, 17, 5, 0, tzinfo=tz), False),
+            (datetime(2026, 11, 17, 7, 0, tzinfo=tz), True),
+        )
+        for now, expected in cases:
+            with self.subTest(now=now):
+                with freeze_time(now):
+                    self.assertEqual(
+                        WifiClients.may_execute(),
+                        expected,
+                        msg=(
+                            "Expected the snooze schedule to "
+                            f"{'not ' if expected else ''}apply at {now}"
+                        ),
+                    )

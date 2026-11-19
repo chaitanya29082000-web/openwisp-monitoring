@@ -20,6 +20,10 @@ class WifiClients(BaseCheck):
 
     @classmethod
     def _get_start_end_datetime(cls, start, end, today):
+        # Time wrap-around only applies to daily recurring ranges,
+        # i.e. when both dates are omitted
+        dates_omitted = "-" not in start and "-" not in end
+
         # Ensure time is included
         start = f"{start} 00:00" if ":" not in start else start
         end = f"{end} 23:59" if ":" not in end else end
@@ -38,7 +42,7 @@ class WifiClients(BaseCheck):
         start_year, end_year = today.year, today.year
 
         # Adjust for time wrap-around (e.g., 23:00 to 02:00)
-        if start_time > end_time:
+        if dates_omitted and start_time > end_time:
             if today.strftime(cls.TIME_FORMAT) >= start_time:
                 end_date = (today + timezone.timedelta(days=1)).strftime(
                     cls.DATE_FORMAT
